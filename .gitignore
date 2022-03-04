@@ -1,0 +1,7 @@
+*.exe
+zips/*
+*.txt
+!TODO.txt
+.DS_Store
+dmarcsyslogforwarder
+config.json

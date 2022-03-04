@@ -1,0 +1,19 @@
+{
+  "fetchInterval": "1h",
+  "syslogServer": "xxxx.xxxx:514",
+  "syslogProtocol": "tcp",
+  "syslogTag": "dmarc",
+  "dnsServer": "",
+  "dnsConnectTimeout": "1s",
+  "dnsTimeout": "10s",
+  "dnsCacheTimeout": "1h",
+  "batchSize": 30,
+  "imap": {
+    "host": "yyyy.yyy:993",
+    "ssl": true,
+    "user": "",
+    "pass": "",
+    "folder": "INBOX",
+    "ignoreCert": false
+  }
+}
