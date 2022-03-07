@@ -29,6 +29,7 @@ This program does not work on windows as the golang syslog library is not compat
     <dns></dns>
     <dns></dns>
   </source_dns>
+  <source_dns_string>domain1, domain2, domain3</source_dns_string>
   <count></count>
   <envelope_to></envelope_to>
   <header_from></header_from>
@@ -46,6 +47,14 @@ This program does not work on windows as the golang syslog library is not compat
     <disposition></disposition>
     <dkim></dkim>
     <spf></spf>
+    <reason>
+      <type></type>
+      <comment></comment>
+    </reason>
+    <reason>
+      <type></type>
+      <comment></comment>
+    </reason>
   </policy_evaluated>
   <result_spf>
     <domain></domain>

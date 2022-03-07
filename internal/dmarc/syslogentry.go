@@ -22,6 +22,7 @@ type SyslogEntry struct {
 	Errors           SyslogEntryError `xml:"errors"`
 	SourceIP         string           `xml:"source_ip"`
 	SourceDNS        SyslogEntryDNS   `xml:"source_dns"`
+	SourceDNSString  string           `xml:"source_dns_string"`
 	Count            int              `xml:"count"`
 	EnvelopeTo       string           `xml:"envelope_to"`
 	HeaderFrom       string           `xml:"header_from"`
@@ -86,6 +87,7 @@ func ConvertXMLToSyslog(filename string, report XMLReport, dns *dns.CachedDNSRes
 			Errors:           SyslogEntryError{Error: report.ReportMetadata.Error},
 			SourceIP:         record.Row.SourceIP,
 			SourceDNS:        SyslogEntryDNS{Domains: domains},
+			SourceDNSString:  strings.Join(domains, ", "),
 			Count:            record.Row.Count,
 			EnvelopeTo:       record.Identifiers.EnvelopeTo,
 			EnvelopeFrom:     record.Identifiers.EnvelopeFrom,
