@@ -1,6 +1,6 @@
 # DMARCSYSLOGFORWARDER
 
-This program is used to read in dmarc reports from a dedicated IMAP mailbox and converts them to single entries and sends them in XML format via syslog to a remote server. This can be used to feed dmarc reports into your favourite SIEM.
+This program is used to read in dmarc reports from a dedicated IMAP mailbox and converts them to single entries and sends them in XML or JSON format via syslog to a remote server. This can be used to feed dmarc reports into your favourite SIEM.
 
 As each dmarc report can contain multiple entries the report is split into single reports. The source ip from the report is also resolved via DNS.
 
@@ -135,6 +135,7 @@ See the `config.example.json` for an example.
 
 | Fieldname | Description |
 |---|---|
+| format | can either be xml or json |
 | fetchInterval | How often should the job fetch emails from the IMAP server and process them |
 | syslogServer | The syslog server in the format ip:port |
 | syslogProtocol | The syslog protocol. can be tcp, udp or "". On empty string the local unix socket is used |
