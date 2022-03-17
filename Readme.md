@@ -153,3 +153,17 @@ See the `config.example.json` for an example.
 | imap.pass | IMAP password |
 | imap.folder | the IMAP folder the reports are in |
 | imap.ignoreCert | Ignore invalid TLS certificates when connecting to the IMAP server |
+
+## Installation
+
+```bash
+adduser --system dmarc
+mkdir /home/dmarc
+chown -R dmarc:dmarc /home/dmarc
+cd /home/dmarc
+git clone https://github.com/FireFart/dmarcsyslogforwarder.git
+cd dmarcsyslogforwarder
+make
+cp dmarcsyslogforwarder ../
+./install_service.sh
+```
