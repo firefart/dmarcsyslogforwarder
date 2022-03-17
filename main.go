@@ -455,7 +455,7 @@ func (a *app) sendAttachment(ctx context.Context, filename string, body []byte) 
 			if err != nil {
 				return fmt.Errorf("could not send syslog entry: %w", err)
 			}
-			log.Info("wrote message to syslog")
+			log.Debug("wrote message to syslog")
 		}
 	}
 
