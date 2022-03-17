@@ -15,7 +15,8 @@
     "user": "",
     "pass": "",
     "folder": "INBOX",
-    "ignoreCert": false
+    "ignoreCert": false,
+    "timeout": "1h"
   },
   "eventID": "test",
   "eventCategory": "test"

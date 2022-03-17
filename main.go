@@ -279,6 +279,7 @@ func (a *app) fetchIMAP(ctx context.Context) (bool, error) {
 	}()
 
 	msgCounter := 0
+	toDelete := make(map[uint32]string)
 	for msg := range messages {
 		log.Infof("Processing email %s (UID %d)", msg.Envelope.Subject, msg.Uid)
 		valid, err := a.processMessage(ctx, msg)
@@ -286,28 +287,37 @@ func (a *app) fetchIMAP(ctx context.Context) (bool, error) {
 			log.Errorf("could not process message %d: %v", msg.Uid, err)
 			continue
 		}
-		if valid && !a.devMode {
-			log.Infof("Marking message %s (UID: %d) as deleted", msg.Envelope.Subject, msg.Uid)
-			if err := imap.MarkMessageAsDeleted(c, msg.Uid); err != nil {
-				log.Errorf("could not set delete flag on message %d: %v", msg.Uid, err)
-				continue
-			}
+		if valid {
+			log.Debugf("adding message %d to delete set", msg.Uid)
+			toDelete[msg.Uid] = msg.Envelope.Subject
+		} else {
+			log.Infof("Message %s does not seem to be a valid dmarc report", msg.Envelope.Subject)
 		}
 		msgCounter += 1
 	}
+
+	log.Debug("waiting for fetch to finish")
 
 	if err := <-done; err != nil {
 		return false, fmt.Errorf("error on fetch: %w", err)
 	}
 
-	log.Infof("Processed %d emails", msgCounter)
-
 	if !a.devMode {
+		for uid, subject := range toDelete {
+			log.Infof("Marking message %s (UID: %d) as deleted", subject, uid)
+			if err := imap.MarkMessageAsDeleted(c, uid); err != nil {
+				log.Errorf("could not set delete flag on message %d: %v", uid, err)
+				continue
+			}
+		}
+
 		log.Info("Running expunge command (delete all marked messages)")
 		if err := c.Expunge(nil); err != nil {
 			return false, fmt.Errorf("could not expunge: %w", err)
 		}
 	}
+
+	log.Infof("Processed %d emails", msgCounter)
 
 	return hasMore, nil
 }

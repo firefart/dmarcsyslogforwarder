@@ -51,6 +51,7 @@ func NewCachedDNSResolver(ctx context.Context, server string, connectTimeout, ti
 // CachedDNSLookup performs a DNS lookup and caches the result to
 // not hammer your DNS server.
 func (r *CachedDNSResolver) CachedDNSLookup(ip string) ([]string, error) {
+	r.logger.Debugf("resolving %s", ip)
 	val := r.getCacheEntry(ip)
 	if val != nil {
 		return val, nil

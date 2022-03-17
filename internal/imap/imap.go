@@ -18,6 +18,7 @@ func Connect(conf config.IMAPConfig, logger imap.Logger) (*client.Client, error)
 		if err != nil {
 			return nil, err
 		}
+		c.Timeout = conf.Timeout.Duration
 		c.ErrorLog = logger
 		return c, nil
 	}
@@ -26,6 +27,7 @@ func Connect(conf config.IMAPConfig, logger imap.Logger) (*client.Client, error)
 		return nil, err
 	}
 	c.ErrorLog = logger
+	c.Timeout = conf.Timeout.Duration
 	support, err := c.SupportStartTLS()
 	if err != nil {
 		return nil, err

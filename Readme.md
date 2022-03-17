@@ -153,6 +153,7 @@ See the `config.example.json` for an example.
 | imap.pass | IMAP password |
 | imap.folder | the IMAP folder the reports are in |
 | imap.ignoreCert | Ignore invalid TLS certificates when connecting to the IMAP server |
+| imap.timeout | Time to wait for imap commands to complete |
 
 ## Installation
 

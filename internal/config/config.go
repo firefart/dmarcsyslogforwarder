@@ -55,12 +55,13 @@ type Configuration struct {
 }
 
 type IMAPConfig struct {
-	Host       string `json:"host"`
-	SSL        bool   `json:"ssl"`
-	User       string `json:"user"`
-	Pass       string `json:"pass"`
-	Folder     string `json:"folder"`
-	IgnoreCert bool   `json:"ignoreCert"`
+	Host       string   `json:"host"`
+	SSL        bool     `json:"ssl"`
+	User       string   `json:"user"`
+	Pass       string   `json:"pass"`
+	Folder     string   `json:"folder"`
+	IgnoreCert bool     `json:"ignoreCert"`
+	Timeout    Duration `json:"timeout"`
 }
 
 func GetConfig(defaults Configuration, f string) (*Configuration, error) {
