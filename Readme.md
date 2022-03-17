@@ -164,6 +164,5 @@ cd /home/dmarc
 git clone https://github.com/FireFart/dmarcsyslogforwarder.git
 cd dmarcsyslogforwarder
 make
-cp dmarcsyslogforwarder ../
 ./install_service.sh
 ```
