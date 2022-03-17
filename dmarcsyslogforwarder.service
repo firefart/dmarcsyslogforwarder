@@ -1,0 +1,15 @@
+[Unit]
+Description=DMARC Report Syslog Forwarder
+Wants=network-online.target
+After=network.target network-online.target
+
+[Service]
+User=dmarc
+Group=nogroup
+SyslogIdentifier=dmarc
+ExecStart=/home/dmarcsyslogforwarder/dmarcsyslogforwarder -config /home/dmarcsyslogforwarder/config.json
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

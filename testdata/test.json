@@ -1,4 +1,5 @@
 {
+  "format": "xml",
   "fetchInterval": "1h",
   "syslogServer": "xxxx.xxxx:514",
   "syslogProtocol": "tcp",
@@ -15,5 +16,7 @@
     "pass": "",
     "folder": "INBOX",
     "ignoreCert": false
-  }
+  },
+  "eventID": "test",
+  "eventCategory": "test"
 }

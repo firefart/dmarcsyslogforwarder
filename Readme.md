@@ -6,10 +6,69 @@ As each dmarc report can contain multiple entries the report is split into singl
 
 This program does not work on windows as the golang syslog library is not compatible.
 
+## Syslog JSON Format
+
+```json
+{
+  "event_id": "",
+  "event_category": "",
+  "version": "1.0",
+  "domain": "google.com",
+  "date_begin": 1636416000,
+  "date_end": 1636502399,
+  "report_id": "",
+  "org_name": "",
+  "email": "noreply-dmarc-support@google.com",
+  "extra_contact_info": "https://support.google.com/a/answer/2466580",
+  "errors": null,
+  "source_ip": "",
+  "source_dns": [
+    "domain1",
+    "domain2",
+    "domain3"
+  ],
+  "source_dns_string": "domain1, domain2, domain3",
+  "count": 1,
+  "envelope_to": "",
+  "header_from": "",
+  "envelope_from": "",
+  "policy_published": {
+    "domain": "",
+    "adkim": "",
+    "aspf": "",
+    "p": "",
+    "sp": "",
+    "pct": "",
+    "fo": ""
+  },
+  "policy_evaluated": {
+    "disposition": "",
+    "dkim": "",
+    "spf": "",
+    "reason": null
+  },
+  "result_spf": {
+    "domain": "",
+    "scope": "",
+    "result": ""
+  },
+  "result_dkim": {
+    "domain": "",
+    "selector": "",
+    "result": "",
+    "human_result": ""
+  }
+}
+```
+
 ## Syslog XML Format
 
 ```xml
 <syslog_entry>
+  <!-- SIEM specif fields start (ommitted when empty) -->
+  <event_id>FROM_CONFIG</event_id>
+  <event_category>FROM_CONFIG</event_category>
+  <!-- SIEM specif fields end -->
   <version></version>
   <domain>google.com</domain>
   <date_begin>1636416000</date_begin>
@@ -25,9 +84,9 @@ This program does not work on windows as the golang syslog library is not compat
   </errors>
   <source_ip></source_ip>
   <source_dns>
-    <dns></dns>
-    <dns></dns>
-    <dns></dns>
+    <dns>domain1</dns>
+    <dns>domain2</dns>
+    <dns>domain3</dns>
   </source_dns>
   <source_dns_string>domain1, domain2, domain3</source_dns_string>
   <count></count>
@@ -85,6 +144,8 @@ See the `config.example.json` for an example.
 | dnsTimeout | timeout when waiting on DNS answers |
 | dnsCacheTimeout | how long should DNS answers be cached |
 | batchSize | how many emails to fetch per login/logout run. As the IMAP server can simply close connections on timeout and the library can not handle reconnects the mails are fetched in multuple runs |
+| eventID | Value that will be serialized into "EventID". May be needed by your SIEM to match the logs against a log type. This field does not appear in the XML if it's left empty. |
+| eventCategory| Value that will be serialized into "EventCategory". May be needed by your SIEM to match the logs against a log type. This field does not appear in the XML if it's left empty. |
 | imap.host | IMAP server in the format ip:port |
 | imap.ssl | use SSL/TLS when connecting to server |
 | imap.user | IMAP username |

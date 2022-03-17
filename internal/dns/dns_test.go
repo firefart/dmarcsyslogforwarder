@@ -1,6 +1,7 @@
 package dns
 
 import (
+	"context"
 	"os"
 	"testing"
 	"time"
@@ -16,7 +17,7 @@ func TestGetCacheEntry(t *testing.T) {
 	logger.SetOutput(os.Stdout)
 	logger.SetLevel(logrus.DebugLevel)
 
-	dns := NewCachedDNSResolver("8.8.8.8:53", 1*time.Second, 10*time.Second, 1*time.Microsecond, logger)
+	dns := NewCachedDNSResolver(context.Background(), "8.8.8.8:53", 1*time.Second, 10*time.Second, 1*time.Microsecond, logger)
 	dns.updateCache("1.1.1.1", []string{"asdf.com", "ghjkl.com"})
 	time.Sleep(1 * time.Microsecond)
 	res := dns.getCacheEntry("1.1.1.1")
@@ -24,7 +25,7 @@ func TestGetCacheEntry(t *testing.T) {
 		t.Fatalf("cache not expired: %v", res)
 	}
 
-	dns = NewCachedDNSResolver("8.8.8.8:53", 1*time.Second, 10*time.Second, 1*time.Hour, logger)
+	dns = NewCachedDNSResolver(context.Background(), "8.8.8.8:53", 1*time.Second, 10*time.Second, 1*time.Hour, logger)
 	dns.updateCache("1.1.1.1", []string{"asdf.com", "ghjkl.com"})
 	res = dns.getCacheEntry("1.1.1.1")
 	if res == nil {

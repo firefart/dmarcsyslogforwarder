@@ -1,4 +1,5 @@
 {
+  "format": "xml",
   "fetchInterval": "1h",
   "syslogServer": "xxxx.xxxx:514",
   "syslogProtocol": "tcp",
@@ -8,6 +9,8 @@
   "dnsTimeout": "10s",
   "dnsCacheTimeout": "1h",
   "batchSize": 30,
+  "eventID": "",
+  "eventCategory": "",
   "imap": {
     "host": "yyyy.yyy:993",
     "ssl": true,

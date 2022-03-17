@@ -16,6 +16,7 @@ type cacheEntry struct {
 }
 
 type CachedDNSResolver struct {
+	ctx          context.Context
 	timeout      time.Duration
 	cacheTimeout time.Duration
 	resolver     *net.Resolver
@@ -24,7 +25,7 @@ type CachedDNSResolver struct {
 	logger       *logrus.Logger
 }
 
-func NewCachedDNSResolver(server string, connectTimeout, timeout time.Duration, cacheTimeout time.Duration, logger *logrus.Logger) *CachedDNSResolver {
+func NewCachedDNSResolver(ctx context.Context, server string, connectTimeout, timeout time.Duration, cacheTimeout time.Duration, logger *logrus.Logger) *CachedDNSResolver {
 	resolver := net.DefaultResolver
 	if server != "" {
 		resolver = &net.Resolver{
@@ -38,6 +39,7 @@ func NewCachedDNSResolver(server string, connectTimeout, timeout time.Duration, 
 		}
 	}
 	return &CachedDNSResolver{
+		ctx:          ctx,
 		timeout:      timeout,
 		cacheTimeout: cacheTimeout,
 		resolver:     resolver,
@@ -54,7 +56,7 @@ func (r *CachedDNSResolver) CachedDNSLookup(ip string) ([]string, error) {
 		return val, nil
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), r.timeout)
+	ctx, cancel := context.WithTimeout(r.ctx, r.timeout)
 	defer cancel()
 
 	domains, err := r.resolver.LookupAddr(ctx, ip)

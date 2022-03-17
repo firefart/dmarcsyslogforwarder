@@ -39,6 +39,7 @@ func (d *Duration) UnmarshalJSON(b []byte) error {
 }
 
 type Configuration struct {
+	Format            string     `json:"format"`
 	SyslogServer      string     `json:"syslogServer"`
 	SyslogProtocol    string     `json:"syslogProtocol"`
 	SyslogTag         string     `json:"syslogTag"`
@@ -49,6 +50,8 @@ type Configuration struct {
 	FetchInterval     Duration   `json:"fetchInterval"`
 	ImapConfig        IMAPConfig `json:"imap"`
 	BatchSize         int        `json:"batchSize"`
+	EventID           string     `json:"eventID"`
+	EventCategory     string     `json:"eventCategory"`
 }
 
 type IMAPConfig struct {
@@ -75,5 +78,10 @@ func GetConfig(defaults Configuration, f string) (*Configuration, error) {
 	if err = decoder.Decode(&defaults); err != nil {
 		return nil, err
 	}
+
+	if defaults.Format != "xml" && defaults.Format != "json" {
+		return nil, fmt.Errorf("invalid format %s supplied", defaults.Format)
+	}
+
 	return &defaults, nil
 }

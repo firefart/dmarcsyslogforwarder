@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"encoding/xml"
 	"flag"
 	"fmt"
 	"io"
@@ -57,6 +56,7 @@ func main() {
 
 	// set some defaults
 	defaults := config.Configuration{
+		Format: "xml",
 		FetchInterval: config.Duration{
 			Duration: 1 * time.Hour,
 		},
@@ -72,6 +72,8 @@ func main() {
 		DnsCacheTimeout: config.Duration{
 			Duration: 1 * time.Hour,
 		},
+		EventID:       "",
+		EventCategory: "",
 	}
 
 	settings, err := config.GetConfig(defaults, *configFile)
@@ -113,7 +115,7 @@ func run(ctx context.Context, settings *config.Configuration, devMode bool) erro
 		defer sysLog.Close()
 	}
 
-	dnsResolver := dns.NewCachedDNSResolver(settings.DnsServer, settings.DnsConnectTimeout.Duration, settings.DnsTimeout.Duration, settings.DnsCacheTimeout.Duration, log)
+	dnsResolver := dns.NewCachedDNSResolver(ctx, settings.DnsServer, settings.DnsConnectTimeout.Duration, settings.DnsTimeout.Duration, settings.DnsCacheTimeout.Duration, log)
 
 	app := app{
 		sysLog:  sysLog,
@@ -417,23 +419,29 @@ func (a *app) sendAttachment(ctx context.Context, filename string, body []byte) 
 		return fmt.Errorf("could not read file %s: %w", filename, err)
 	}
 
-	reports, err := dmarc.ConvertXMLToSyslog(xmlFilename, *xmlReport, a.dns)
-	if err != nil {
-		return fmt.Errorf("could not convert XML: %w", err)
+	var r [][]byte
+	switch a.config.Format {
+	case "xml":
+		r, err = dmarc.ConvertToSyslogXML(xmlFilename, *xmlReport, a.dns, a.config.EventID, a.config.EventCategory)
+		if err != nil {
+			return fmt.Errorf("could not convert XML: %w", err)
+		}
+	case "json":
+		r, err = dmarc.ConvertToSyslogJSON(xmlFilename, *xmlReport, a.dns, a.config.EventID, a.config.EventCategory)
+		if err != nil {
+			return fmt.Errorf("could not convert JSON: %w", err)
+		}
+	default:
+		return fmt.Errorf("invalid format %s", a.config.Format)
 	}
 
-	for _, report := range reports {
-		xmlString, err := xml.Marshal(report)
-		if err != nil {
-			return fmt.Errorf("could not marshal XML: %w", err)
-		}
-
-		log.Debugf("Converted entry: %s", string(xmlString))
+	for _, report := range r {
+		log.Debugf("Converted entry: %s", string(report))
 
 		// hint: we can't check the number returned here because
 		// it's just the len of the input, so pretty useless
 		if !a.devMode {
-			_, err = a.sysLog.Write(xmlString)
+			_, err = a.sysLog.Write(report)
 			if err != nil {
 				return fmt.Errorf("could not send syslog entry: %w", err)
 			}
