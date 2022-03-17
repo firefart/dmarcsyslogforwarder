@@ -251,7 +251,7 @@ func (a *app) fetchIMAP(ctx context.Context) (bool, error) {
 		hasMore = false
 	} else {
 		for x, id := range ids {
-			if x > a.config.BatchSize {
+			if x > a.config.BatchSize-1 {
 				hasMore = true
 				break
 			}
