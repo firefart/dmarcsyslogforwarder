@@ -1,7 +1,7 @@
 #!/bin/sh
 
 echo "Copying unit file"
-cp /home/dmarcsyslogforwarder/dmarcsyslogforwarder.service /etc/systemd/system/dmarcsyslogforwarder.service
+cp /home/dmarc/dmarcsyslogforwarder/dmarcsyslogforwarder.service /etc/systemd/system/dmarcsyslogforwarder.service
 echo "reloading systemctl"
 systemctl daemon-reload
 echo "enabling service"
