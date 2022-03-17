@@ -285,14 +285,15 @@ func (a *app) fetchIMAP(ctx context.Context) (bool, error) {
 		valid, err := a.processMessage(ctx, msg)
 		if err != nil {
 			log.Errorf("could not process message %d: %v", msg.Uid, err)
-			continue
+			// no continue here so we can check for a valid message
 		}
 		if valid {
 			log.Debugf("adding message %d to delete set", msg.Uid)
-			toDelete[msg.Uid] = msg.Envelope.Subject
 		} else {
-			log.Infof("Message %s does not seem to be a valid dmarc report", msg.Envelope.Subject)
+			log.Infof("Message %s does not seem to be a valid dmarc report. Marking it for deletion.", msg.Envelope.Subject)
 		}
+		// always delete a processed message to clean up junk behind
+		toDelete[msg.Uid] = msg.Envelope.Subject
 		msgCounter += 1
 	}
 
