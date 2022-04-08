@@ -5,3 +5,4 @@ zips/*
 .DS_Store
 dmarcsyslogforwarder
 config.json
+dist/
