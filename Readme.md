@@ -162,7 +162,7 @@ adduser --system dmarc
 mkdir /home/dmarc
 chown -R dmarc:dmarc /home/dmarc
 cd /home/dmarc
-git clone https://github.com/FireFart/dmarcsyslogforwarder.git
+git clone https://github.com/firefart/dmarcsyslogforwarder.git
 cd dmarcsyslogforwarder
 make
 ./install_service.sh
