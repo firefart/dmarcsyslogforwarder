@@ -5,7 +5,7 @@ After=network.target network-online.target
 
 [Service]
 User=dmarc
-Group=nogroup
+Group=dmarc
 SyslogIdentifier=dmarc
 ExecStart=/home/dmarc/dmarcsyslogforwarder/dmarcsyslogforwarder -config /home/dmarc/dmarcsyslogforwarder/config.json
 Restart=on-failure
