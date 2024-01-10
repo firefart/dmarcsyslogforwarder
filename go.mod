@@ -4,7 +4,7 @@ go 1.18
 
 require (
 	github.com/emersion/go-imap v1.2.1
-	github.com/emersion/go-message v0.17.0
+	github.com/emersion/go-message v0.18.0
 	github.com/sirupsen/logrus v1.9.3
 )
 
