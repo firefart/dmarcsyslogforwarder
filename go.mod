@@ -1,6 +1,6 @@
 module github.com/firefart/dmarcsyslogforwarder
 
-go 1.22
+go 1.23
 
 require (
 	github.com/emersion/go-imap v1.2.1

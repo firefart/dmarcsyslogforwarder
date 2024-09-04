@@ -30,7 +30,7 @@ func NewCachedDNSResolver(ctx context.Context, server string, connectTimeout, ti
 	if server != "" {
 		resolver = &net.Resolver{
 			PreferGo: true,
-			Dial: func(ctx context.Context, network, address string) (net.Conn, error) {
+			Dial: func(ctx context.Context, network, _ string) (net.Conn, error) {
 				d := net.Dialer{
 					Timeout: connectTimeout,
 				}

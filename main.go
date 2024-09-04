@@ -63,13 +63,13 @@ func main() {
 		BatchSize:      30,
 		SyslogProtocol: "tcp",
 		SyslogTag:      "dmarc",
-		DnsConnectTimeout: config.Duration{
+		DNSConnectTimeout: config.Duration{
 			Duration: 1 * time.Second,
 		},
-		DnsTimeout: config.Duration{
+		DNSTimeout: config.Duration{
 			Duration: 10 * time.Second,
 		},
-		DnsCacheTimeout: config.Duration{
+		DNSCacheTimeout: config.Duration{
 			Duration: 1 * time.Hour,
 		},
 		EventID:       "",
@@ -115,7 +115,7 @@ func run(ctx context.Context, settings *config.Configuration, devMode bool) erro
 		defer sysLog.Close()
 	}
 
-	dnsResolver := dns.NewCachedDNSResolver(ctx, settings.DnsServer, settings.DnsConnectTimeout.Duration, settings.DnsTimeout.Duration, settings.DnsCacheTimeout.Duration, log)
+	dnsResolver := dns.NewCachedDNSResolver(ctx, settings.DNSServer, settings.DNSConnectTimeout.Duration, settings.DNSTimeout.Duration, settings.DNSCacheTimeout.Duration, log)
 
 	app := app{
 		sysLog:  sysLog,
@@ -294,7 +294,7 @@ func (a *app) fetchIMAP(ctx context.Context) (bool, error) {
 		}
 		// always delete a processed message to clean up junk behind
 		toDelete[msg.Uid] = msg.Envelope.Subject
-		msgCounter += 1
+		msgCounter++
 	}
 
 	log.Debug("waiting for fetch to finish")
@@ -384,7 +384,7 @@ outer:
 						return false, fmt.Errorf("could not determine filename")
 					}
 
-					if err := a.sendAttachment(ctx, filename, b); err != nil {
+					if err := a.sendAttachment(filename, b); err != nil {
 						return false, err
 					}
 					// we parsed and sent the attachment so it's valid
@@ -410,7 +410,7 @@ outer:
 					return false, fmt.Errorf("could not read attachment: %w", err)
 				}
 
-				if err := a.sendAttachment(ctx, filename, b); err != nil {
+				if err := a.sendAttachment(filename, b); err != nil {
 					return false, err
 				}
 				// we parsed and sent the attachment so it's valid
@@ -423,9 +423,9 @@ outer:
 	return validDmarcReport, nil
 }
 
-func (a *app) sendAttachment(ctx context.Context, filename string, body []byte) error {
+func (a *app) sendAttachment(filename string, body []byte) error {
 	log.Infof("Got attachment: %s", filename)
-	xmlFilename, xmlReport, err := dmarc.ReadFile(ctx, filename, body)
+	xmlFilename, xmlReport, err := dmarc.ReadFile(filename, body)
 	if err != nil {
 		return fmt.Errorf("could not read file %s: %w", filename, err)
 	}

@@ -4,7 +4,6 @@ import (
 	"archive/zip"
 	"bytes"
 	"compress/gzip"
-	"context"
 	"encoding/xml"
 	"fmt"
 	"io"
@@ -52,7 +51,7 @@ func readZIP(content []byte) ([]byte, string, error) {
 	return nil, "", fmt.Errorf("no valid file found within zip archive")
 }
 
-func ReadFile(ctx context.Context, filename string, content []byte) (string, *XMLReport, error) {
+func ReadFile(filename string, content []byte) (string, *XMLReport, error) {
 	var xmlContent []byte
 	var xmlFilename string
 	var err error

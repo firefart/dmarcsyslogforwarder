@@ -43,10 +43,10 @@ type Configuration struct {
 	SyslogServer      string     `json:"syslogServer"`
 	SyslogProtocol    string     `json:"syslogProtocol"`
 	SyslogTag         string     `json:"syslogTag"`
-	DnsServer         string     `json:"dnsServer"`
-	DnsConnectTimeout Duration   `json:"dnsConnectTimeout"`
-	DnsTimeout        Duration   `json:"dnsTimeout"`
-	DnsCacheTimeout   Duration   `json:"dnsCacheTimeout"`
+	DNSServer         string     `json:"dnsServer"`
+	DNSConnectTimeout Duration   `json:"dnsConnectTimeout"`
+	DNSTimeout        Duration   `json:"dnsTimeout"`
+	DNSCacheTimeout   Duration   `json:"dnsCacheTimeout"`
 	FetchInterval     Duration   `json:"fetchInterval"`
 	ImapConfig        IMAPConfig `json:"imap"`
 	BatchSize         int        `json:"batchSize"`
