@@ -2,20 +2,17 @@ package dns
 
 import (
 	"context"
-	"os"
+	"io"
+	"log/slog"
 	"testing"
 	"time"
-
-	"github.com/sirupsen/logrus"
 )
 
 func TestGetCacheEntry(t *testing.T) {
 	t.Parallel()
 
 	// test expire
-	logger := logrus.New()
-	logger.SetOutput(os.Stdout)
-	logger.SetLevel(logrus.DebugLevel)
+	logger := slog.New(slog.NewTextHandler(io.Discard, nil))
 
 	dns := NewCachedDNSResolver(context.Background(), "8.8.8.8:53", 1*time.Second, 10*time.Second, 1*time.Microsecond, logger)
 	dns.updateCache("1.1.1.1", []string{"asdf.com", "ghjkl.com"})

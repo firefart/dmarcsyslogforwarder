@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/go-playground/validator/v10"
+	"github.com/hashicorp/go-multierror"
 	"os"
 	"time"
 )
@@ -39,51 +41,84 @@ func (d *Duration) UnmarshalJSON(b []byte) error {
 }
 
 type Configuration struct {
-	Format            string     `json:"format"`
-	SyslogServer      string     `json:"syslogServer"`
-	SyslogProtocol    string     `json:"syslogProtocol"`
-	SyslogTag         string     `json:"syslogTag"`
+	Format            string     `json:"format" validate:"required,oneof=xml json"`
+	SyslogServer      string     `json:"syslogServer" validate:"required,hostname_port"`
+	SyslogProtocol    string     `json:"syslogProtocol" validate:"oneof='' tcp udp"`
+	SyslogTag         string     `json:"syslogTag" validate:"required"`
 	DNSServer         string     `json:"dnsServer"`
-	DNSConnectTimeout Duration   `json:"dnsConnectTimeout"`
-	DNSTimeout        Duration   `json:"dnsTimeout"`
-	DNSCacheTimeout   Duration   `json:"dnsCacheTimeout"`
-	FetchInterval     Duration   `json:"fetchInterval"`
-	ImapConfig        IMAPConfig `json:"imap"`
-	BatchSize         int        `json:"batchSize"`
-	EventID           string     `json:"eventID"`
-	EventCategory     string     `json:"eventCategory"`
+	DNSConnectTimeout Duration   `json:"dnsConnectTimeout" validate:"required"`
+	DNSTimeout        Duration   `json:"dnsTimeout" validate:"required"`
+	DNSCacheTimeout   Duration   `json:"dnsCacheTimeout" validate:"required"`
+	FetchInterval     Duration   `json:"fetchInterval" validate:"required"`
+	ImapConfig        IMAPConfig `json:"imap" validate:"required"`
+	BatchSize         int        `json:"batchSize" validate:"required,gt=0"`
+	EventID           string     `json:"eventID" validate:"required"`
+	EventCategory     string     `json:"eventCategory" validate:"required"`
 }
 
 type IMAPConfig struct {
-	Host       string   `json:"host"`
+	Host       string   `json:"host" validate:"required,hostname_port"`
 	SSL        bool     `json:"ssl"`
 	User       string   `json:"user"`
 	Pass       string   `json:"pass"`
-	Folder     string   `json:"folder"`
+	Folder     string   `json:"folder" validate:"required"`
 	IgnoreCert bool     `json:"ignoreCert"`
-	Timeout    Duration `json:"timeout"`
+	Timeout    Duration `json:"timeout" validate:"required"`
 }
 
-func GetConfig(defaults Configuration, f string) (*Configuration, error) {
+func GetConfig(f string) (Configuration, error) {
 	if f == "" {
-		return nil, fmt.Errorf("please provide a valid config file")
+		return Configuration{}, fmt.Errorf("please provide a valid config file")
+	}
+
+	// set some defaults
+	defaults := Configuration{
+		Format: "xml",
+		FetchInterval: Duration{
+			Duration: 1 * time.Hour,
+		},
+		BatchSize:      30,
+		SyslogProtocol: "tcp",
+		SyslogTag:      "dmarc",
+		DNSConnectTimeout: Duration{
+			Duration: 1 * time.Second,
+		},
+		DNSTimeout: Duration{
+			Duration: 10 * time.Second,
+		},
+		DNSCacheTimeout: Duration{
+			Duration: 1 * time.Hour,
+		},
+		EventID:       "",
+		EventCategory: "",
 	}
 
 	b, err := os.ReadFile(f) // nolint: gosec
 	if err != nil {
-		return nil, err
+		return Configuration{}, err
 	}
 	reader := bytes.NewReader(b)
 
 	decoder := json.NewDecoder(reader)
 	decoder.DisallowUnknownFields()
 	if err = decoder.Decode(&defaults); err != nil {
-		return nil, err
+		return Configuration{}, err
 	}
 
-	if defaults.Format != "xml" && defaults.Format != "json" {
-		return nil, fmt.Errorf("invalid format %s supplied", defaults.Format)
+	validate := validator.New(validator.WithRequiredStructEnabled())
+
+	if err := validate.Struct(defaults); err != nil {
+		var invalidValidationError *validator.InvalidValidationError
+		if errors.As(err, &invalidValidationError) {
+			return Configuration{}, err
+		}
+
+		var resultErr error
+		for _, err := range err.(validator.ValidationErrors) {
+			resultErr = multierror.Append(resultErr, err)
+		}
+		return Configuration{}, resultErr
 	}
 
-	return &defaults, nil
+	return defaults, nil
 }

@@ -2,12 +2,11 @@ package dns
 
 import (
 	"context"
+	"log/slog"
 	"net"
 	"strings"
 	"sync"
 	"time"
-
-	"github.com/sirupsen/logrus"
 )
 
 type cacheEntry struct {
@@ -22,10 +21,10 @@ type CachedDNSResolver struct {
 	resolver     *net.Resolver
 	mutex        sync.RWMutex
 	dnsCache     map[string]cacheEntry
-	logger       *logrus.Logger
+	logger       *slog.Logger
 }
 
-func NewCachedDNSResolver(ctx context.Context, server string, connectTimeout, timeout time.Duration, cacheTimeout time.Duration, logger *logrus.Logger) *CachedDNSResolver {
+func NewCachedDNSResolver(ctx context.Context, server string, connectTimeout, timeout time.Duration, cacheTimeout time.Duration, logger *slog.Logger) *CachedDNSResolver {
 	resolver := net.DefaultResolver
 	if server != "" {
 		resolver = &net.Resolver{
@@ -51,7 +50,7 @@ func NewCachedDNSResolver(ctx context.Context, server string, connectTimeout, ti
 // CachedDNSLookup performs a DNS lookup and caches the result to
 // not hammer your DNS server.
 func (r *CachedDNSResolver) CachedDNSLookup(ip string) ([]string, error) {
-	r.logger.Debugf("resolving %s", ip)
+	r.logger.Debug("resolving dns", slog.String("ip", ip))
 	val := r.getCacheEntry(ip)
 	if val != nil {
 		return val, nil
@@ -92,7 +91,7 @@ func (r *CachedDNSResolver) getCacheEntry(ip string) []string {
 		// check if the cache expired
 		if time.Now().Add(-1 * r.cacheTimeout).After(val.timestamp) {
 			// cache expired, remove the entry
-			r.logger.Debugf("deleting stale DNS entry for %s, Store Time: %s", ip, val.timestamp)
+			r.logger.Debug("deleting stale DNS entry", slog.String("ip", ip), slog.Time("store-time", val.timestamp))
 			delete(r.dnsCache, ip)
 			return nil
 		}
