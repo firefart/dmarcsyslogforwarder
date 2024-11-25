@@ -6,9 +6,22 @@ import (
 	"fmt"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/firefart/dmarcsyslogforwarder/internal/dns"
 )
+
+type CustomTime time.Time
+
+func (t CustomTime) MarshalJSON() ([]byte, error) {
+	stamp := fmt.Sprintf("\"%s\"", time.Time(t).Format(time.RFC822Z))
+	return []byte(stamp), nil
+}
+
+func (t CustomTime) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
+	stamp := time.Time(t).Format(time.RFC822Z)
+	return e.EncodeElement(stamp, start)
+}
 
 type SyslogEntry struct {
 	XMLName          xml.Name              `xml:"syslog_entry" json:"-"`                                    // for xml serialisation
@@ -18,6 +31,8 @@ type SyslogEntry struct {
 	Domain           string                `xml:"domain" json:"domain"`
 	DateBegin        int64                 `xml:"date_begin" json:"date_begin"`
 	DateEnd          int64                 `xml:"date_end" json:"date_end"`
+	DateBeginParsed  CustomTime            `xml:"date_begin_parsed" json:"date_begin_parsed"`
+	DateEndParsed    CustomTime            `xml:"date_end_parsed" json:"date_end_parsed"`
 	ReportID         string                `xml:"report_id" json:"report_id"`
 	OrgName          string                `xml:"org_name" json:"org_name"`
 	Email            string                `xml:"email" json:"email"`
@@ -133,6 +148,8 @@ func convertXMLToSyslog(filename string, report XMLReport, dns *dns.CachedDNSRes
 			Domain:           reportingDomain,
 			DateBegin:        report.ReportMetadata.DateRange.Begin,
 			DateEnd:          report.ReportMetadata.DateRange.End,
+			DateBeginParsed:  CustomTime(time.Unix(report.ReportMetadata.DateRange.Begin, 0)),
+			DateEndParsed:    CustomTime(time.Unix(report.ReportMetadata.DateRange.End, 0)),
 			ReportID:         report.ReportMetadata.ReportID,
 			OrgName:          report.ReportMetadata.OrgName,
 			Email:            report.ReportMetadata.Email,

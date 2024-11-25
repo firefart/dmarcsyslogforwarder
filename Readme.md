@@ -16,6 +16,8 @@ This program does not work on windows as the golang syslog library is not compat
   "domain": "google.com",
   "date_begin": 1636416000,
   "date_end": 1636502399,
+  "date_begin_parsed": "09 Nov 21 00:00 +0000",
+  "date_end_parsed": "09 Nov 21 23:59 +0000",
   "report_id": "",
   "org_name": "",
   "email": "noreply-dmarc-support@google.com",
@@ -73,6 +75,8 @@ This program does not work on windows as the golang syslog library is not compat
   <domain>google.com</domain>
   <date_begin>1636416000</date_begin>
   <date_end>1636502399</date_end>
+  <date_begin_parsed>09 Nov 21 00:00 +0000</date_begin_parsed>
+  <date_end_parsed>09 Nov 21 23:59 +0000</date_end_parsed>
   <report_id></report_id>
   <org_name>google.com</org_name>
   <email>noreply-dmarc-support@google.com</email>
