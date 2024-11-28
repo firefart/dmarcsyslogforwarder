@@ -19,7 +19,9 @@ func readGZ(content []byte) ([]byte, error) {
 	if err != nil {
 		return nil, fmt.Errorf("could not gzip read: %w", err)
 	}
-	defer gz.Close()
+	defer func(gz *gzip.Reader) {
+		_ = gz.Close()
+	}(gz)
 	xmlContent, err := io.ReadAll(gz)
 	if err != nil {
 		return nil, fmt.Errorf("could not read: %w", err)

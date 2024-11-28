@@ -1,6 +1,6 @@
 package dmarc
 
-// Report represents the top element of a DMARC report
+// XMLReport represents the top element of a DMARC report
 // https://tools.ietf.org/html/rfc7489#appendix-C
 // also see report.xsd in this repository
 type XMLReport struct {
