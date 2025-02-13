@@ -5,10 +5,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/go-playground/validator/v10"
-	"github.com/hashicorp/go-multierror"
 	"os"
 	"time"
+
+	"github.com/go-playground/validator/v10"
+	"github.com/hashicorp/go-multierror"
 )
 
 type Duration struct {
