@@ -6,7 +6,7 @@ require (
 	github.com/charmbracelet/log v0.4.0
 	github.com/emersion/go-imap v1.2.1
 	github.com/emersion/go-message v0.18.2
-	github.com/go-playground/validator/v10 v10.24.0
+	github.com/go-playground/validator/v10 v10.25.0
 	github.com/hashicorp/go-multierror v1.1.1
 	github.com/mattn/go-isatty v0.0.20
 )
@@ -27,7 +27,7 @@ require (
 	github.com/muesli/termenv v0.15.2 // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
 	golang.org/x/crypto v0.33.0 // indirect
-	golang.org/x/exp v0.0.0-20250210185358-939b2ce775ac // indirect
+	golang.org/x/exp v0.0.0-20250215185904-eff6e970281f // indirect
 	golang.org/x/net v0.35.0 // indirect
 	golang.org/x/sys v0.30.0 // indirect
 	golang.org/x/text v0.22.0 // indirect
