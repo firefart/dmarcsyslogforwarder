@@ -3,7 +3,7 @@ module github.com/firefart/dmarcsyslogforwarder
 go 1.24
 
 require (
-	github.com/charmbracelet/log v0.4.0
+	github.com/charmbracelet/log v0.4.1
 	github.com/emersion/go-imap v1.2.1
 	github.com/emersion/go-message v0.18.2
 	github.com/go-playground/validator/v10 v10.25.0
