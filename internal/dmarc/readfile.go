@@ -77,7 +77,7 @@ func ReadFile(filename string, content []byte) (string, *XMLReport, error) {
 		return "", nil, fmt.Errorf("unknown extension %s", ext)
 	}
 	// some xmls contain invalid XML by adding an unclosed xs tag
-	xmlContent = bytes.Replace(xmlContent, []byte(xsTag), []byte(""), -1)
+	xmlContent = bytes.ReplaceAll(xmlContent, []byte(xsTag), []byte(""))
 
 	// parse XML into object
 	var xmlDocument XMLReport

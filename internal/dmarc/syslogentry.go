@@ -135,7 +135,7 @@ func convertXMLToSyslog(filename string, report XMLReport, dns *dns.CachedDNSRes
 		var reasons []SyslogPolicyOverrideReason
 		for _, r := range record.Row.PolicyEvaluated.Reason {
 			// too error prone:
-			// nolint:gosimple
+			// nolint:staticcheck
 			tmp := SyslogPolicyOverrideReason{
 				Type:    r.Type,
 				Comment: r.Comment,
