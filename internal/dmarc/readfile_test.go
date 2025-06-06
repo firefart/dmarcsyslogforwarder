@@ -32,7 +32,6 @@ func TestReadGZ(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt // NOTE: https://github.com/golang/go/wiki/CommonMistakes#using-goroutines-on-loop-iterator-variables
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel() // marks each test case as capable of running in parallel with each other
 
@@ -90,7 +89,6 @@ func TestReadZIP(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt // NOTE: https://github.com/golang/go/wiki/CommonMistakes#using-goroutines-on-loop-iterator-variables
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel() // marks each test case as capable of running in parallel with each other
 

@@ -9,9 +9,9 @@ import (
 )
 
 func Connect(conf config.IMAPConfig, logger imap.Logger) (*client.Client, error) {
-	tlsConfig := tls.Config{}
+	tlsConfig := tls.Config{} // nolint: gosec
 	if conf.IgnoreCert {
-		tlsConfig.InsecureSkipVerify = true
+		tlsConfig.InsecureSkipVerify = true // nolint:gosec
 	}
 	if conf.SSL {
 		c, err := client.DialTLS(conf.Host, &tlsConfig)

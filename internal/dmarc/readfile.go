@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"compress/gzip"
 	"encoding/xml"
+	"errors"
 	"fmt"
 	"io"
 	"path/filepath"
@@ -19,9 +20,8 @@ func readGZ(content []byte) ([]byte, error) {
 	if err != nil {
 		return nil, fmt.Errorf("could not gzip read: %w", err)
 	}
-	defer func(gz *gzip.Reader) {
-		_ = gz.Close()
-	}(gz)
+	defer gz.Close()
+
 	xmlContent, err := io.ReadAll(gz)
 	if err != nil {
 		return nil, fmt.Errorf("could not read: %w", err)
@@ -50,7 +50,7 @@ func readZIP(content []byte) ([]byte, string, error) {
 		// only use first file in the zip file
 		return xmlContent, f.FileInfo().Name(), nil
 	}
-	return nil, "", fmt.Errorf("no valid file found within zip archive")
+	return nil, "", errors.New("no valid file found within zip archive")
 }
 
 func ReadFile(filename string, content []byte) (string, *XMLReport, error) {

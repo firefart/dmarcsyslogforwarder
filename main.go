@@ -23,6 +23,7 @@ import (
 	goimap "github.com/emersion/go-imap"
 	"github.com/emersion/go-message/mail"
 	"github.com/hashicorp/go-multierror"
+
 	// needed to handle other charsets too
 	_ "github.com/emersion/go-message/charset"
 )
@@ -48,10 +49,10 @@ func main() {
 	if *version {
 		buildInfo, ok := debug.ReadBuildInfo()
 		if !ok {
-			fmt.Println("Unable to determine version information")
+			fmt.Println("Unable to determine version information") // nolint:forbidigo
 			os.Exit(1)
 		}
-		fmt.Printf("%s", buildInfo)
+		fmt.Printf("%s", buildInfo) // nolint:forbidigo
 		os.Exit(0)
 	}
 
@@ -92,7 +93,7 @@ func main() {
 			for _, e := range merr.Errors {
 				logger.Error(e.Error())
 			}
-			os.Exit(1)
+			os.Exit(1) // nolint: gocritic
 		}
 		// a normal error
 		logger.Error(err.Error())
@@ -114,12 +115,7 @@ func run(ctx context.Context, settings config.Configuration, logger *slog.Logger
 		if err != nil {
 			return err
 		}
-		defer func(sysLog *syslog.Writer) {
-			err := sysLog.Close()
-			if err != nil {
-				logger.Error("error closing syslog", slog.String("err", err.Error()))
-			}
-		}(sysLog)
+		defer sysLog.Close()
 	}
 
 	dnsResolver := dns.NewCachedDNSResolver(ctx, settings.DNSServer, settings.DNSConnectTimeout.Duration, settings.DNSTimeout.Duration, settings.DNSCacheTimeout.Duration, logger)
@@ -216,6 +212,7 @@ func (a *app) fetchIMAP(ctx context.Context) (bool, error) {
 	if err != nil {
 		return false, fmt.Errorf("could not connect to %s: %w", a.config.ImapConfig.Host, err)
 	}
+	defer c.Close()
 
 	a.log.Debug("connected to imap server")
 
@@ -230,12 +227,7 @@ func (a *app) fetchIMAP(ctx context.Context) (bool, error) {
 
 	a.log.Debug("successful login")
 
-	defer func() {
-		if err := c.Logout(); err != nil {
-			a.log.Error("Error on logout", slog.String("err", err.Error()))
-			return
-		}
-	}()
+	defer c.Logout() // nolint: errcheck
 
 	hasFolder, err := imap.HasImapFolder(c, a.config.ImapConfig.Folder)
 	if err != nil {
@@ -335,8 +327,7 @@ func (a *app) fetchIMAP(ctx context.Context) (bool, error) {
 		for uid, subject := range toDelete {
 			a.log.Info("Marking message as deleted", slog.String("subject", subject), slog.Int("uid", int(uid)))
 			if err := imap.MarkMessageAsDeleted(c, uid); err != nil {
-				a.log.Error("could not set delete flag on message", slog.Int("uid", int(uid)), slog.String("err", err.Error()))
-				continue
+				return false, fmt.Errorf("could not mark message %d as deleted: %w", int(uid), err)
 			}
 		}
 
@@ -356,19 +347,14 @@ func (a *app) processMessage(ctx context.Context, msg *goimap.Message) (bool, er
 	validDmarcReport := false
 	r := msg.GetBody(&goimap.BodySectionName{})
 	if r == nil {
-		return false, fmt.Errorf("server didn't return message body")
+		return false, errors.New("server didn't return message body")
 	}
 	a.log.Debug("body length", slog.Int("len", r.Len()))
 	m, err := mail.CreateReader(r)
 	if err != nil {
 		return false, fmt.Errorf("could not create reader: %w", err)
 	}
-	defer func(m *mail.Reader) {
-		err := m.Close()
-		if err != nil {
-			a.log.Error("error on closing mail reader", slog.String("err", err.Error()))
-		}
-	}(m)
+	defer m.Close()
 	a.log.Debug("reader created")
 
 outer:
@@ -379,7 +365,7 @@ outer:
 		default:
 			a.log.Debug("before nextpart")
 			p, err := m.NextPart()
-			if err == io.EOF {
+			if errors.Is(err, io.EOF) {
 				a.log.Debug("EOF")
 				break outer
 			} else if err != nil {
@@ -402,19 +388,22 @@ outer:
 				if isArchive {
 					a.log.Info("found inline attachment")
 					// try to get attachment filename from headers
-					inlineHeader := p.Header.(*mail.InlineHeader)
+					inlineHeader, ok := p.Header.(*mail.InlineHeader)
+					if !ok {
+						return false, errors.New("could not cast header to inline header")
+					}
 					contentDisp, contentDispParams, err := inlineHeader.ContentDisposition()
 					if err != nil {
 						return false, fmt.Errorf("could not get contentdisposition: %w", err)
 					}
 
 					if contentDisp != "inline" {
-						return false, fmt.Errorf("content disposition is not inline")
+						return false, errors.New("content disposition is not inline")
 					}
 
 					filename, ok := contentDispParams["filename"]
 					if !ok {
-						return false, fmt.Errorf("could not determine filename")
+						return false, errors.New("could not determine filename")
 					}
 
 					if err := a.sendAttachment(filename, b); err != nil {

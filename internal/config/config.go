@@ -69,7 +69,7 @@ type IMAPConfig struct {
 
 func GetConfig(f string) (Configuration, error) {
 	if f == "" {
-		return Configuration{}, fmt.Errorf("please provide a valid config file")
+		return Configuration{}, errors.New("please provide a valid config file")
 	}
 
 	// set some defaults
@@ -114,8 +114,12 @@ func GetConfig(f string) (Configuration, error) {
 			return Configuration{}, err
 		}
 
+		var valErr validator.ValidationErrors
+		if ok := errors.As(err, &valErr); !ok {
+			return Configuration{}, fmt.Errorf("could not cast err to ValidationErrors: %w", err)
+		}
 		var resultErr error
-		for _, err := range err.(validator.ValidationErrors) {
+		for _, err := range valErr {
 			resultErr = multierror.Append(resultErr, err)
 		}
 		return Configuration{}, resultErr

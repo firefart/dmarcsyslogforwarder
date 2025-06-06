@@ -24,7 +24,10 @@ func newLogger(debugMode, jsonOutput bool) *slog.Logger {
 		}
 		replaceFunc = func(_ []string, a slog.Attr) slog.Attr {
 			if a.Key == slog.SourceKey {
-				source := a.Value.Any().(*slog.Source)
+				source, ok := a.Value.Any().(*slog.Source)
+				if !ok {
+					return a
+				}
 				// remove current working directory and only leave the relative path to the program
 				if file, ok := strings.CutPrefix(source.File, wd); ok {
 					source.File = file
@@ -40,11 +43,13 @@ func newLogger(debugMode, jsonOutput bool) *slog.Logger {
 		AddSource:   debugMode,
 		ReplaceAttr: replaceFunc,
 	}
-	if jsonOutput {
+
+	switch {
+	case jsonOutput:
 		handler = slog.NewJSONHandler(w, slogHandlerOpts)
-	} else if !isatty.IsTerminal(w.Fd()) {
+	case !isatty.IsTerminal(w.Fd()):
 		handler = slog.NewTextHandler(w, slogHandlerOpts)
-	} else {
+	default:
 		l := log.InfoLevel
 		if debugMode {
 			l = log.DebugLevel
