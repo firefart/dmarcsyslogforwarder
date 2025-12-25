@@ -6,7 +6,7 @@ require (
 	github.com/charmbracelet/log v0.4.2
 	github.com/emersion/go-imap v1.2.1
 	github.com/emersion/go-message v0.18.2
-	github.com/go-playground/validator/v10 v10.30.0
+	github.com/go-playground/validator/v10 v10.30.1
 	github.com/hashicorp/go-multierror v1.1.1
 	github.com/mattn/go-isatty v0.0.20
 )
