@@ -61,7 +61,7 @@ type IMAPConfig struct {
 	Host       string   `json:"host" validate:"required,hostname_port"`
 	SSL        bool     `json:"ssl"`
 	User       string   `json:"user"`
-	Pass       string   `json:"pass"`
+	Pass       string   `json:"pass"` // nolint: gosec
 	Folder     string   `json:"folder" validate:"required"`
 	IgnoreCert bool     `json:"ignoreCert"`
 	Timeout    Duration `json:"timeout" validate:"required"`
