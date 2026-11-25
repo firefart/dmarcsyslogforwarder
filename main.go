@@ -89,8 +89,7 @@ func main() {
 
 	if err != nil {
 		// check if we have a multierror
-		var merr *multierror.Error
-		if errors.As(err, &merr) {
+		if merr, ok := errors.AsType[*multierror.Error](err); ok {
 			for _, e := range merr.Errors {
 				logger.Error(e.Error())
 			}
@@ -199,11 +198,11 @@ type imapLogger struct {
 	log *slog.Logger
 }
 
-func (l imapLogger) Printf(format string, v ...interface{}) {
+func (l imapLogger) Printf(format string, v ...any) {
 	l.log.Info(fmt.Sprintf(format, v...))
 }
 
-func (l imapLogger) Println(v ...interface{}) {
+func (l imapLogger) Println(v ...any) {
 	l.log.Info(fmt.Sprintln(v...))
 }
 

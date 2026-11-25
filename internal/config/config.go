@@ -21,7 +21,7 @@ func (d *Duration) MarshalJSON() ([]byte, error) {
 }
 
 func (d *Duration) UnmarshalJSON(b []byte) error {
-	var v interface{}
+	var v any
 	if err := json.Unmarshal(b, &v); err != nil {
 		return err
 	}
@@ -109,8 +109,7 @@ func GetConfig(f string) (Configuration, error) {
 	validate := validator.New(validator.WithRequiredStructEnabled())
 
 	if err := validate.Struct(defaults); err != nil {
-		var invalidValidationError *validator.InvalidValidationError
-		if errors.As(err, &invalidValidationError) {
+		if _, ok := errors.AsType[*validator.InvalidValidationError](err); ok {
 			return Configuration{}, err
 		}
 

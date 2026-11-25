@@ -4,25 +4,35 @@ vars:
   PROGRAM: dmarcsyslogforwarder
 
 tasks:
+  deps:
+    cmds:
+      - go mod tidy -v
+
   update:
     cmds:
       - go get -u
+      - go get -u tool
       - go mod tidy -v
 
   build:
     aliases: [ default ]
+    deps: [deps]
     cmds:
       - go fmt ./...
+      - go tool gofumpt -l -w .
       - go vet ./...
+      - go fix ./...
       - go build -o {{.PROGRAM}}
 
   test:
+    deps: [deps]
     env:
       CGO_ENABLED: 1 # required by -race
     cmds:
       - go test -race -cover ./...
 
   lint:
+    deps: [deps]
     cmds:
       - golangci-lint run ./... --timeout=30m
       - go mod tidy

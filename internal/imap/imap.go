@@ -67,7 +67,7 @@ func MarkMessageAsDeleted(c *client.Client, msgUID uint32) error {
 	seq := new(imap.SeqSet)
 	seq.AddNum(msgUID)
 	item := imap.FormatFlagsOp(imap.AddFlags, true)
-	flags := []interface{}{imap.DeletedFlag}
+	flags := []any{imap.DeletedFlag}
 	if err := c.UidStore(seq, item, flags, nil); err != nil {
 		return err
 	}

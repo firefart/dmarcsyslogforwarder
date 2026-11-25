@@ -13,10 +13,7 @@ var magicTable = [][]byte{
 }
 
 func IsSupportedArchive(content []byte) bool {
-	sliceEnd := 10
-	if len(content) < sliceEnd {
-		sliceEnd = len(content)
-	}
+	sliceEnd := min(len(content), 10)
 	contentStr := content[0:sliceEnd]
 
 	for _, magic := range magicTable {
