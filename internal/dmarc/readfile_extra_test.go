@@ -21,8 +21,15 @@ func loadTestReport(t *testing.T) []byte {
 
 func gzipBytes(t *testing.T, content []byte) []byte {
 	t.Helper()
+	return gzipNamedBytes(t, "", content)
+}
+
+// gzipNamedBytes creates a gzip file with the original filename stored in the header
+func gzipNamedBytes(t *testing.T, name string, content []byte) []byte {
+	t.Helper()
 	var buf bytes.Buffer
 	w := gzip.NewWriter(&buf)
+	w.Name = name
 	if _, err := w.Write(content); err != nil {
 		t.Fatal(err)
 	}
@@ -73,6 +80,18 @@ func TestReadFile(t *testing.T) {
 		{name: "zip detected by magic bytes", filename: "", content: zipBytes(t, rfcName+".xml", report), expectedFilename: rfcName + ".xml"},
 		{name: "unsupported file", filename: "smime.p7s", content: []byte("signature"), expectedErr: ErrUnsupportedFile, wantErr: true},
 		{name: "invalid xml", filename: "report.xml", content: []byte("<feedback>"), wantErr: true},
+		// attachments and files inside the archive without an extension
+		{name: "no extension plain content", filename: "report", content: report, expectedErr: ErrUnsupportedFile, wantErr: true},
+		{name: "gz without extension", filename: "report", content: gzipBytes(t, report), expectedFilename: "report"},
+		{name: "gz without extension uses name from gzip header", filename: "report", content: gzipNamedBytes(t, rfcName+".xml", report), expectedFilename: rfcName + ".xml"},
+		{name: "gz rfc name without extension", filename: rfcName, content: gzipBytes(t, report), expectedFilename: rfcName},
+		{name: "gz without extension invalid xml", filename: "report", content: gzipBytes(t, []byte("no xml")), expectedErr: ErrUnsupportedFile, wantErr: true},
+		{name: "gz with extension, inner file without extension", filename: rfcName + ".gz", content: gzipBytes(t, report), expectedFilename: rfcName},
+		{name: "gz with extension, inner file without extension invalid xml", filename: rfcName + ".gz", content: gzipBytes(t, []byte("no xml")), expectedErr: ErrUnsupportedFile, wantErr: true},
+		{name: "zip without extension, inner file without extension", filename: "report", content: zipBytes(t, rfcName, report), expectedFilename: rfcName},
+		{name: "zip rfc name without extension, inner file without extension", filename: rfcName, content: zipBytes(t, rfcName, report), expectedFilename: rfcName},
+		{name: "zip without extension, inner file without extension invalid xml", filename: "report", content: zipBytes(t, "report", []byte{0x00, 0x01, 0x02}), expectedErr: ErrUnsupportedFile, wantErr: true},
+		{name: "zip, inner xml file invalid", filename: "report.zip", content: zipBytes(t, "report.xml", []byte("<feedback>")), wantErr: true},
 	}
 
 	for _, tt := range tests {
@@ -85,6 +104,9 @@ func TestReadFile(t *testing.T) {
 				}
 				if tt.expectedErr != nil && !errors.Is(err, tt.expectedErr) {
 					t.Fatalf("expected error %v, got %v", tt.expectedErr, err)
+				}
+				if tt.expectedErr == nil && errors.Is(err, ErrUnsupportedFile) {
+					t.Fatalf("expected a parse error, got %v", err)
 				}
 				return
 			}

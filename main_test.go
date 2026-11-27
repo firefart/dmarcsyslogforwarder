@@ -174,13 +174,18 @@ func gzipReport(t *testing.T) []byte {
 
 func zipReport(t *testing.T) []byte {
 	t.Helper()
+	return zipFile(t, rfcName+".xml", loadReport(t))
+}
+
+func zipFile(t *testing.T, name string, content []byte) []byte {
+	t.Helper()
 	var buf bytes.Buffer
 	w := zip.NewWriter(&buf)
-	f, err := w.Create(rfcName + ".xml")
+	f, err := w.Create(name)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := f.Write(loadReport(t)); err != nil {
+	if _, err := f.Write(content); err != nil {
 		t.Fatal(err)
 	}
 	if err := w.Close(); err != nil {
@@ -255,6 +260,9 @@ func TestFetchIMAPProcessesAndDeletes(t *testing.T) {
 			attachmentPart("application/gzip", rfcName+".xml.gz", gzipReport(t)),
 		),
 		attachmentMail("attachment without filename", attachmentPart("application/octet-stream", "", gzipReport(t))),
+		attachmentMail("zip without extensions", attachmentPart("application/octet-stream", rfcName, zipFile(t, rfcName, loadReport(t)))),
+		attachmentMail("gz without extensions", attachmentPart("application/octet-stream", "report", gzipReport(t))),
+		attachmentMail("zip without extensions and invalid content", attachmentPart("application/octet-stream", "report", zipFile(t, "report", []byte("no xml")))),
 		textMail("junk"),
 	)
 
@@ -268,7 +276,7 @@ func TestFetchIMAPProcessesAndDeletes(t *testing.T) {
 		t.Fatal("expected no more messages")
 	}
 
-	if got, want := sysLog.count(), 4*recordsCount; got != want {
+	if got, want := sysLog.count(), 6*recordsCount; got != want {
 		t.Fatalf("expected %d syslog entries, got %d", want, got)
 	}
 	if remaining := remainingSubjects(t, addr); len(remaining) != 0 {

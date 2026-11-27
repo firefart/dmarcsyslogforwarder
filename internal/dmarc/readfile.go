@@ -35,18 +35,20 @@ func readLimited(r io.Reader, limit int64) ([]byte, error) {
 	return content, nil
 }
 
-func readGZ(content []byte) ([]byte, error) {
+// readGZ returns the uncompressed content and the optional original filename
+// stored in the gzip header
+func readGZ(content []byte) ([]byte, string, error) {
 	gz, err := gzip.NewReader(bytes.NewReader(content))
 	if err != nil {
-		return nil, fmt.Errorf("could not gzip read: %w", err)
+		return nil, "", fmt.Errorf("could not gzip read: %w", err)
 	}
 	defer gz.Close()
 
 	xmlContent, err := readLimited(gz, MaxReportSize)
 	if err != nil {
-		return nil, fmt.Errorf("could not read: %w", err)
+		return nil, "", fmt.Errorf("could not read: %w", err)
 	}
-	return xmlContent, nil
+	return xmlContent, gz.Name, nil
 }
 
 func readZIP(content []byte) ([]byte, string, error) {
@@ -90,9 +92,11 @@ const (
 	fileTypeZIP
 )
 
-// detectFileType determines the file type by the file extension and falls
-// back to the magic bytes of the content if the extension is unknown
-func detectFileType(filename string, content []byte) fileType {
+// fileTypeFromExtension returns the file type based on the extension of the
+// filename. Filenames without an extension and filenames following the RFC
+// naming scheme without an extension (where filepath.Ext returns everything
+// after the dot of the domain) both return fileTypeUnknown.
+func fileTypeFromExtension(filename string) fileType {
 	switch strings.ToLower(filepath.Ext(filename)) {
 	case ".xml":
 		return fileTypeXML
@@ -100,6 +104,16 @@ func detectFileType(filename string, content []byte) fileType {
 		return fileTypeGZ
 	case ".zip":
 		return fileTypeZIP
+	default:
+		return fileTypeUnknown
+	}
+}
+
+// detectFileType determines the file type by the file extension and falls
+// back to the magic bytes of the content if there is no known extension
+func detectFileType(filename string, content []byte) fileType {
+	if t := fileTypeFromExtension(filename); t != fileTypeUnknown {
+		return t
 	}
 
 	switch {
@@ -125,14 +139,19 @@ func ReadFile(filename string, content []byte) (string, *XMLReport, error) {
 		xmlContent = content
 		xmlFilename = filename
 	case fileTypeGZ:
-		xmlContent, err = readGZ(content)
+		var gzName string
+		xmlContent, gzName, err = readGZ(content)
 		if err != nil {
 			return "", nil, err
 		}
-		xmlFilename = filename
-		ext := filepath.Ext(filename)
-		if strings.EqualFold(ext, ".gz") || strings.EqualFold(ext, ".gzip") {
-			xmlFilename = strings.TrimSuffix(filename, ext)
+		switch {
+		case fileTypeFromExtension(filename) == fileTypeGZ:
+			xmlFilename = strings.TrimSuffix(filename, filepath.Ext(filename))
+		case gzName != "":
+			// the attachment has no extension, use the original filename from the gzip header
+			xmlFilename = gzName
+		default:
+			xmlFilename = filename
 		}
 	case fileTypeZIP:
 		xmlContent, xmlFilename, err = readZIP(content)
@@ -148,6 +167,11 @@ func ReadFile(filename string, content []byte) (string, *XMLReport, error) {
 	// parse XML into object
 	var xmlDocument XMLReport
 	if err := xml.Unmarshal(xmlContent, &xmlDocument); err != nil {
+		// the extracted file has no xml extension, so we only tried to
+		// parse it as xml. If that fails it is not a supported file.
+		if fileTypeFromExtension(xmlFilename) != fileTypeXML {
+			return "", nil, fmt.Errorf("%w: %q is not a valid xml file: %w", ErrUnsupportedFile, xmlFilename, err)
+		}
 		return "", nil, fmt.Errorf("error on xml unmarshal: %w", err)
 	}
 

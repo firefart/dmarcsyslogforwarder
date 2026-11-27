@@ -35,7 +35,7 @@ func TestReadGZ(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel() // marks each test case as capable of running in parallel with each other
 
-			plainContent, err := readGZ(tt.content)
+			plainContent, _, err := readGZ(tt.content)
 			if !tt.valid && err == nil {
 				t.Fatal("expected an error but got none")
 			} else if tt.valid && err != nil {
