@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/go-playground/validator/v10"
-	"github.com/hashicorp/go-multierror"
 )
 
 type Duration struct {
@@ -25,20 +24,14 @@ func (d *Duration) UnmarshalJSON(b []byte) error {
 	if err := json.Unmarshal(b, &v); err != nil {
 		return err
 	}
-	switch value := v.(type) {
-	case float64:
-		d.Duration = time.Duration(value)
-		return nil
-	case string:
-		var err error
-		d.Duration, err = time.ParseDuration(value)
-		if err != nil {
-			return err
-		}
-		return nil
-	default:
-		return errors.New("invalid duration")
+	value, ok := v.(string)
+	if !ok {
+		// plain numbers would be interpreted as nanoseconds which is never what the user wants
+		return fmt.Errorf("invalid duration %s: please use a string like \"10s\" or \"1h\"", string(b))
 	}
+	var err error
+	d.Duration, err = time.ParseDuration(value)
+	return err
 }
 
 type Configuration struct {
@@ -53,18 +46,19 @@ type Configuration struct {
 	FetchInterval     Duration   `json:"fetchInterval" validate:"required"`
 	ImapConfig        IMAPConfig `json:"imap" validate:"required"`
 	BatchSize         int        `json:"batchSize" validate:"required,gt=0"`
-	EventID           string     `json:"eventID" validate:"required"`
-	EventCategory     string     `json:"eventCategory" validate:"required"`
+	EventID           string     `json:"eventID"`
+	EventCategory     string     `json:"eventCategory"`
 }
 
 type IMAPConfig struct {
-	Host       string   `json:"host" validate:"required,hostname_port"`
-	SSL        bool     `json:"ssl"`
-	User       string   `json:"user"`
-	Pass       string   `json:"pass"` // nolint: gosec
-	Folder     string   `json:"folder" validate:"required"`
-	IgnoreCert bool     `json:"ignoreCert"`
-	Timeout    Duration `json:"timeout" validate:"required"`
+	Host           string   `json:"host" validate:"required,hostname_port"`
+	SSL            bool     `json:"ssl"`
+	User           string   `json:"user"`
+	Pass           string   `json:"pass"` // nolint: gosec
+	Folder         string   `json:"folder" validate:"required"`
+	IgnoreCert     bool     `json:"ignoreCert"`
+	AllowPlaintext bool     `json:"allowPlaintext"`
+	Timeout        Duration `json:"timeout" validate:"required"`
 }
 
 func GetConfig(f string) (Configuration, error) {
@@ -113,16 +107,40 @@ func GetConfig(f string) (Configuration, error) {
 			return Configuration{}, err
 		}
 
-		var valErr validator.ValidationErrors
-		if ok := errors.As(err, &valErr); !ok {
+		valErr, ok := errors.AsType[validator.ValidationErrors](err)
+		if !ok {
 			return Configuration{}, fmt.Errorf("could not cast err to ValidationErrors: %w", err)
 		}
-		var resultErr error
+		errs := make([]error, 0, len(valErr))
 		for _, err := range valErr {
-			resultErr = multierror.Append(resultErr, err)
+			errs = append(errs, err)
 		}
-		return Configuration{}, resultErr
+		return Configuration{}, errors.Join(errs...)
+	}
+
+	if err := validateDurations(defaults); err != nil {
+		return Configuration{}, err
 	}
 
 	return defaults, nil
+}
+
+func validateDurations(c Configuration) error {
+	durations := []struct {
+		name  string
+		value time.Duration
+	}{
+		{"dnsConnectTimeout", c.DNSConnectTimeout.Duration},
+		{"dnsTimeout", c.DNSTimeout.Duration},
+		{"dnsCacheTimeout", c.DNSCacheTimeout.Duration},
+		{"fetchInterval", c.FetchInterval.Duration},
+		{"imap.timeout", c.ImapConfig.Timeout.Duration},
+	}
+	var errs []error
+	for _, d := range durations {
+		if d.value <= 0 {
+			errs = append(errs, fmt.Errorf("%s must be greater than 0, got %s", d.name, d.value))
+		}
+	}
+	return errors.Join(errs...)
 }

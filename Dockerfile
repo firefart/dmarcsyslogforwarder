@@ -1,10 +1,10 @@
 FROM golang:latest AS build-env
 WORKDIR /src
 ENV CGO_ENABLED=0
-COPY go.mod /src/
+COPY go.mod go.sum /src/
 RUN go mod download
 COPY . .
-RUN go build -a -o dmarcsyslogforwarder -trimpath
+RUN go build -o dmarcsyslogforwarder -trimpath
 
 FROM alpine:latest
 

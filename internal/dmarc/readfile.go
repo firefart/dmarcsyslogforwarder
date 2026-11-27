@@ -10,19 +10,39 @@ import (
 	"io"
 	"path/filepath"
 	"strings"
+
+	"github.com/firefart/dmarcsyslogforwarder/internal/helper"
 )
 
 const xsTag = `<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" targetNamespace="http://dmarc.org/dmarc-xml/0.1">`
 
+// MaxReportSize is the maximum size of an uncompressed report. This protects
+// against zip and gzip bombs as anyone can send mails to the report mailbox.
+const MaxReportSize = 100 * 1024 * 1024 // 100 MiB
+
+// ErrUnsupportedFile is returned when a file is neither an XML file nor a supported archive.
+var ErrUnsupportedFile = errors.New("unsupported file type")
+
+// readLimited reads at most limit bytes from r and returns an error if there is more data
+func readLimited(r io.Reader, limit int64) ([]byte, error) {
+	content, err := io.ReadAll(io.LimitReader(r, limit+1))
+	if err != nil {
+		return nil, err
+	}
+	if int64(len(content)) > limit {
+		return nil, fmt.Errorf("uncompressed content exceeds the maximum size of %d bytes", limit)
+	}
+	return content, nil
+}
+
 func readGZ(content []byte) ([]byte, error) {
-	buf := bytes.NewBuffer(content)
-	gz, err := gzip.NewReader(buf)
+	gz, err := gzip.NewReader(bytes.NewReader(content))
 	if err != nil {
 		return nil, fmt.Errorf("could not gzip read: %w", err)
 	}
 	defer gz.Close()
 
-	xmlContent, err := io.ReadAll(gz)
+	xmlContent, err := readLimited(gz, MaxReportSize)
 	if err != nil {
 		return nil, fmt.Errorf("could not read: %w", err)
 	}
@@ -30,8 +50,7 @@ func readGZ(content []byte) ([]byte, error) {
 }
 
 func readZIP(content []byte) ([]byte, string, error) {
-	buf := bytes.NewReader(content)
-	r, err := zip.NewReader(buf, int64(len(content)))
+	r, err := zip.NewReader(bytes.NewReader(content), int64(len(content)))
 	if err != nil {
 		return nil, "", fmt.Errorf("could not open zip: %w", err)
 	}
@@ -39,42 +58,89 @@ func readZIP(content []byte) ([]byte, string, error) {
 		if f.FileInfo().IsDir() {
 			continue
 		}
-		x, err := f.Open()
-		if err != nil {
-			return nil, "", fmt.Errorf("could not open file %s inside zip: %w", f.Name, err)
-		}
-		xmlContent, err := io.ReadAll(x)
-		if err != nil {
-			return nil, "", fmt.Errorf("could not read file %s inside zip: %w", f.Name, err)
-		}
 		// only use first file in the zip file
+		xmlContent, err := readZIPFile(f)
+		if err != nil {
+			return nil, "", err
+		}
 		return xmlContent, f.FileInfo().Name(), nil
 	}
 	return nil, "", errors.New("no valid file found within zip archive")
 }
 
+func readZIPFile(f *zip.File) ([]byte, error) {
+	x, err := f.Open()
+	if err != nil {
+		return nil, fmt.Errorf("could not open file %s inside zip: %w", f.Name, err)
+	}
+	defer x.Close()
+	xmlContent, err := readLimited(x, MaxReportSize)
+	if err != nil {
+		return nil, fmt.Errorf("could not read file %s inside zip: %w", f.Name, err)
+	}
+	return xmlContent, nil
+}
+
+type fileType int
+
+const (
+	fileTypeUnknown fileType = iota
+	fileTypeXML
+	fileTypeGZ
+	fileTypeZIP
+)
+
+// detectFileType determines the file type by the file extension and falls
+// back to the magic bytes of the content if the extension is unknown
+func detectFileType(filename string, content []byte) fileType {
+	switch strings.ToLower(filepath.Ext(filename)) {
+	case ".xml":
+		return fileTypeXML
+	case ".gz", ".gzip":
+		return fileTypeGZ
+	case ".zip":
+		return fileTypeZIP
+	}
+
+	switch {
+	case helper.IsGZ(content):
+		return fileTypeGZ
+	case helper.IsZIP(content):
+		return fileTypeZIP
+	default:
+		return fileTypeUnknown
+	}
+}
+
+// ReadFile parses a dmarc report. The filename is used to determine the file
+// type and the returned filename is the name of the xml file which can be
+// used to determine the reporting domain.
+// ErrUnsupportedFile is returned if the file is not a dmarc report.
 func ReadFile(filename string, content []byte) (string, *XMLReport, error) {
 	var xmlContent []byte
 	var xmlFilename string
 	var err error
-	ext := filepath.Ext(filename)
-	switch ext {
-	case ".xml":
+	switch detectFileType(filename, content) {
+	case fileTypeXML:
 		xmlContent = content
 		xmlFilename = filename
-	case ".gz":
+	case fileTypeGZ:
 		xmlContent, err = readGZ(content)
 		if err != nil {
 			return "", nil, err
 		}
-		xmlFilename = strings.TrimRight(filename, ".gz")
-	case ".zip":
+		xmlFilename = filename
+		ext := filepath.Ext(filename)
+		if strings.EqualFold(ext, ".gz") || strings.EqualFold(ext, ".gzip") {
+			xmlFilename = strings.TrimSuffix(filename, ext)
+		}
+	case fileTypeZIP:
 		xmlContent, xmlFilename, err = readZIP(content)
 		if err != nil {
 			return "", nil, err
 		}
-	default:
-		return "", nil, fmt.Errorf("unknown extension %s", ext)
+	case fileTypeUnknown:
+		return "", nil, fmt.Errorf("%w: %q", ErrUnsupportedFile, filename)
 	}
 	// some xmls contain invalid XML by adding an unclosed xs tag
 	xmlContent = bytes.ReplaceAll(xmlContent, []byte(xsTag), []byte(""))

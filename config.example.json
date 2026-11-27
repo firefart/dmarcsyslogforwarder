@@ -18,6 +18,7 @@
     "pass": "",
     "folder": "INBOX",
     "ignoreCert": false,
+    "allowPlaintext": false,
     "timeout": "3s"
   }
 }

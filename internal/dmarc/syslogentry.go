@@ -87,10 +87,7 @@ type SyslogPolicyOverrideReason struct {
 }
 
 func ConvertToSyslogJSON(filename string, report XMLReport, dns *dns.CachedDNSResolver, eventID, eventCategory string) ([][]byte, error) {
-	reports, err := convertXMLToSyslog(filename, report, dns, eventID, eventCategory)
-	if err != nil {
-		return nil, err
-	}
+	reports := convertXMLToSyslog(filename, report, dns, eventID, eventCategory)
 
 	var ret [][]byte
 	for _, report := range reports {
@@ -104,10 +101,7 @@ func ConvertToSyslogJSON(filename string, report XMLReport, dns *dns.CachedDNSRe
 }
 
 func ConvertToSyslogXML(filename string, report XMLReport, dns *dns.CachedDNSResolver, eventID, eventCategory string) ([][]byte, error) {
-	reports, err := convertXMLToSyslog(filename, report, dns, eventID, eventCategory)
-	if err != nil {
-		return nil, err
-	}
+	reports := convertXMLToSyslog(filename, report, dns, eventID, eventCategory)
 
 	var ret [][]byte
 	for _, report := range reports {
@@ -120,11 +114,8 @@ func ConvertToSyslogXML(filename string, report XMLReport, dns *dns.CachedDNSRes
 	return ret, nil
 }
 
-func convertXMLToSyslog(filename string, report XMLReport, dns *dns.CachedDNSResolver, eventID, eventCategory string) ([]SyslogEntry, error) {
-	reportingDomain, err := getDomainFromFilename(filename)
-	if err != nil {
-		return nil, err
-	}
+func convertXMLToSyslog(filename string, report XMLReport, dns *dns.CachedDNSResolver, eventID, eventCategory string) []SyslogEntry {
+	reportingDomain := getReportingDomain(filename, report)
 	syslogs := make([]SyslogEntry, len(report.Records))
 	for i, record := range report.Records {
 		domains, err := dns.CachedDNSLookup(record.Row.SourceIP)
@@ -193,7 +184,20 @@ func convertXMLToSyslog(filename string, report XMLReport, dns *dns.CachedDNSRes
 		}
 		syslogs[i] = syslog
 	}
-	return syslogs, nil
+	return syslogs
+}
+
+// getReportingDomain returns the domain of the reporting organisation. It is
+// taken from the filename as defined in the RFC. As not all reporters follow
+// the RFC we fall back to the domain of the report email or the org name.
+func getReportingDomain(filename string, report XMLReport) string {
+	if domain, err := getDomainFromFilename(filename); err == nil {
+		return domain
+	}
+	if _, domain, ok := strings.Cut(report.ReportMetadata.Email, "@"); ok && domain != "" {
+		return domain
+	}
+	return report.ReportMetadata.OrgName
 }
 
 func getDomainFromFilename(filename string) (string, error) {

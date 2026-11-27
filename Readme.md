@@ -27,11 +27,7 @@ This program does not work on windows as the golang syslog library is not compat
   "extra_contact_info": "https://support.google.com/a/answer/2466580",
   "errors": null,
   "source_ip": "",
-  "source_dns": [
-    "domain1",
-    "domain2",
-    "domain3"
-  ],
+  "source_dns": ["domain1", "domain2", "domain3"],
   "source_dns_string": "domain1, domain2, domain3",
   "count": 1,
   "envelope_to": "",
@@ -138,29 +134,36 @@ This program does not work on windows as the golang syslog library is not compat
 
 ## Config File
 
-See the `config.example.json` for an example.
+See the `config.example.json` for an example. All durations need to be specified as strings like `"10s"` or `"1h"`.
 
-| Fieldname         | Description                                                                                                                                                                                |
-|-------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| format            | can either be xml or json                                                                                                                                                                  |
-| fetchInterval     | How often should the job fetch emails from the IMAP server and process them                                                                                                                |
-| syslogServer      | The syslog server in the format ip:port                                                                                                                                                    |
-| syslogProtocol    | The syslog protocol. can be tcp, udp or "". On empty string the local unix socket is used                                                                                                  |
-| syslogTag         | The syslog tag to add to all messages                                                                                                                                                      |
-| dnsServer         | a custom DNS server to use for queries. Uses the system default if left empty                                                                                                              |
-| dnsConnectTimeout | timeout when connecting to the DNS server                                                                                                                                                  |
-| dnsTimeout        | timeout when waiting on DNS answers                                                                                                                                                        |
-| dnsCacheTimeout   | how long should DNS answers be cached                                                                                                                                                      |
-| batchSize         | how many emails to fetch per login/logout run. As the IMAP server can simply close connections on timeout and the library can not handle reconnects the mails are fetched in multuple runs |
-| eventID           | Value that will be serialized into "EventID". May be needed by your SIEM to match the logs against a log type. This field does not appear in the XML if it's left empty.                   |
-| eventCategory     | Value that will be serialized into "EventCategory". May be needed by your SIEM to match the logs against a log type. This field does not appear in the XML if it's left empty.             |
-| imap.host         | IMAP server in the format ip:port                                                                                                                                                          |
-| imap.ssl          | use SSL/TLS when connecting to server                                                                                                                                                      |
-| imap.user         | IMAP username                                                                                                                                                                              |
-| imap.pass         | IMAP password                                                                                                                                                                              |
-| imap.folder       | the IMAP folder the reports are in                                                                                                                                                         |
-| imap.ignoreCert   | Ignore invalid TLS certificates when connecting to the IMAP server                                                                                                                         |
-| imap.timeout      | Time to wait for imap commands to complete                                                                                                                                                 |
+| Fieldname           | Description                                                                                                                                                                                |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| format              | can either be xml or json                                                                                                                                                                  |
+| fetchInterval       | How often should the job fetch emails from the IMAP server and process them                                                                                                                |
+| syslogServer        | The syslog server in the format ip:port                                                                                                                                                    |
+| syslogProtocol      | The syslog protocol. can be tcp, udp or "". On empty string the local unix socket is used                                                                                                  |
+| syslogTag           | The syslog tag to add to all messages                                                                                                                                                      |
+| dnsServer           | a custom DNS server to use for queries. Uses the system default if left empty                                                                                                              |
+| dnsConnectTimeout   | timeout when connecting to the DNS server                                                                                                                                                  |
+| dnsTimeout          | timeout when waiting on DNS answers                                                                                                                                                        |
+| dnsCacheTimeout     | how long should DNS answers be cached                                                                                                                                                      |
+| batchSize           | how many emails to fetch per login/logout run. As the IMAP server can simply close connections on timeout and the library can not handle reconnects the mails are fetched in multuple runs |
+| eventID             | Value that will be serialized into "EventID". May be needed by your SIEM to match the logs against a log type. This field does not appear in the XML if it's left empty.                   |
+| eventCategory       | Value that will be serialized into "EventCategory". May be needed by your SIEM to match the logs against a log type. This field does not appear in the XML if it's left empty.             |
+| imap.host           | IMAP server in the format ip:port                                                                                                                                                          |
+| imap.ssl            | use SSL/TLS when connecting to server                                                                                                                                                      |
+| imap.user           | IMAP username                                                                                                                                                                              |
+| imap.pass           | IMAP password                                                                                                                                                                              |
+| imap.folder         | the IMAP folder the reports are in                                                                                                                                                         |
+| imap.ignoreCert     | Ignore invalid TLS certificates when connecting to the IMAP server                                                                                                                         |
+| imap.allowPlaintext | Allow logging in without encryption if `ssl` is false and the server does not support STARTTLS                                                                                             |
+| imap.timeout        | Time to wait for imap commands to complete                                                                                                                                                 |
+
+## Message handling
+
+After processing, emails are deleted from the IMAP folder. This also includes emails that do not contain a valid dmarc
+report to clean up junk. If a report can not be sent to the syslog server, or the program is stopped while processing,
+the email is kept and processed again on the next run. Uncompressed reports larger than 100 MiB are rejected.
 
 ## Installation
 
